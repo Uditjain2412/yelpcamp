@@ -23,6 +23,7 @@ const seedDB = async () => {
         })
         await camp.save();
     }
+    db.close();
 }
 
 seedDB();
