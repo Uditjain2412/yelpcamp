@@ -65,7 +65,6 @@ app.delete('/campgrounds/:id', async (req, res) => {
     res.redirect('/campgrounds')
 })
 
-
 app.listen(port, () => {
     console.log(`YelpCamp server running on port ${port}`)
 })
