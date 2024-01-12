@@ -4,9 +4,10 @@ const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const Campground = require('./models/campground');
+const Review = require('./models/review');
 const expressError = require('./utils/expressError');
 const catchAsync = require('./utils/catchAsync');
-const { campgroundSchema } = require('./schema');
+const { campgroundSchema, reviewSchema } = require('./schema');
 
 const port = 3000;
 
@@ -35,7 +36,16 @@ const validateCampground = (req, res, next) => {
     } else {
         next();
     }
+}
 
+const validateReview = (req, res, next) => {
+    const { error } = reviewSchema.validate(req.body);
+    if (error) {
+        const msg = error.details.map(el => el.message).join(',');
+        throw new expressError(msg, 400);
+    } else {
+        next();
+    }
 }
 
 app.get('/', async (req, res) => {
@@ -52,7 +62,7 @@ app.get('/campgrounds/new', (req, res) => {
 })
 
 app.get('/campgrounds/:id', catchAsync(async (req, res) => {
-    const campground = await Campground.findById(req.params.id);
+    const campground = await Campground.findById(req.params.id).populate('reviews');
     res.render('campgrounds/show', { campground });
 }))
 
@@ -78,6 +88,23 @@ app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds')
+}))
+
+app.post('/campgrounds/:id/reviews', validateReview, catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const review = new Review(req.body.review);
+    const campground = await Campground.findById(id);
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${id}`);
+}))
+
+app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req, res) => {
+    const { id, reviewId } = req.params;
+    const review = await Review.findByIdAndDelete(reviewId);
+    const campground = await Campground.findByIdAndUpdate(id, { $pull: { review: reviewId } });
+    res.redirect(`/campgrounds/${id}`);
 }))
 
 app.all('*', (req, res, next) => {
