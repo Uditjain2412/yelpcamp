@@ -4,7 +4,7 @@ const Review = require('../models/review');
 const Campground = require('../models/campground');
 const expressError = require('../utils/expressError');
 const catchAsync = require('../utils/catchAsync');
-const { reviewSchema } = require('../schema');
+const { reviewSchema } = require('../joiSchema');
 
 const validateReview = (req, res, next) => {
     const { error } = reviewSchema.validate(req.body);
