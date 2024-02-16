@@ -1,5 +1,8 @@
 const { cloudinary } = require('../cloudinary');
 const Campground = require('../models/campground');
+const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+const mapBoxToken = process.env.MAPBOX_TOKEN;
+const geocodingClient = mbxGeocoding({ accessToken: mapBoxToken });
 const uploadToCloudinary = require('../utils/cloudinaryUploader')
 
 module.exports.renderNewForm = (req, res) => {
@@ -22,12 +25,18 @@ module.exports.showCampground = async (req, res) => {
         req.flash('error', 'Cannot find that campground!');
         return res.redirect('/campgrounds');
     }
+    console.log(campground.geometry)
     res.render('campgrounds/show', { campground });
 }
 
 module.exports.createCampground = async (req, res) => {
     const campground = new Campground(req.body.campground);
-
+    campground.geometry = await geocodingClient.forwardGeocode({
+        query: campground.location,
+        limit: 1
+    })
+        .send()
+        .then(geo => geo.body.features[0].geometry);
     for (let f of req.files) {
         const localPath = f.path;
         const result = await uploadToCloudinary.uploadToCloudinary(localPath);
@@ -52,6 +61,12 @@ module.exports.renderEditForm = async (req, res) => {
 module.exports.editCampground = async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground });
+    campground.geometry = await geocodingClient.forwardGeocode({
+        query: req.body.campground.location,
+        limit: 1
+    })
+        .send()
+        .then(geo => geo.body.features[0].geometry);
     if (req.files) {
         for (let f of req.files) {
             const localPath = f.path;
