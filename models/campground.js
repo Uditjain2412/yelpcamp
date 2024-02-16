@@ -8,6 +8,8 @@ const ImageSchema = Schema({
     filename: String
 })
 
+const opts = { toJSON: { virtuals: true } };
+
 const CampgroundSchema = Schema({
     title: String,
     price: Number,
@@ -35,6 +37,13 @@ const CampgroundSchema = Schema({
             ref: "Review"
         }
     ]
+}, opts);
+
+CampgroundSchema.virtual('properties.popUpMarkup').get(function () {
+    return `
+        <strong><a href="campgrounds/${this._id}">${this.title}</a></strong>
+        <p>${this.description.substring(0, 120)}...</p>
+        `
 })
 
 CampgroundSchema.post('findOneAndDelete', async (doc) => {
