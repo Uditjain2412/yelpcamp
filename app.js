@@ -17,10 +17,10 @@ const userRoutes = require('./routes/users');
 const User = require('./models/user');
 const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
-// const dbUrl = process.env.DB_URL;
-const dbUrl = 'mongodb://127.0.0.1:27017/yelp-camp';
 
-const port = 3000;
+const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/yelp-camp';
+const port = process.env.PORT || 3000;
+const secret = process.env.SECRET || "thisisnotagoodsecret:(";
 
 mongoose.connect(dbUrl);
 
@@ -48,9 +48,7 @@ app.use(helmet());
 const store = mongoStore.create({
     mongoUrl: dbUrl,
     touchAfter: 24 * 60 * 60,
-    crypto: {
-        secret: 'thisshouldbeabettersecret!'
-    }
+    crypto: { secret }
 });
 
 store.on('error', function (e) {
@@ -59,7 +57,7 @@ store.on('error', function (e) {
 
 const sessionConfig = {
     store,
-    secret: 'mysecretkey',
+    secret,
     resave: false,
     saveUninitialized: false,
     cookie: {
