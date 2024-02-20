@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env' });
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -6,6 +6,7 @@ const path = require('path');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const session = require('express-session');
+const mongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require('passport');
 const passportLocalStrategy = require('passport-local');
@@ -16,10 +17,12 @@ const userRoutes = require('./routes/users');
 const User = require('./models/user');
 const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
+// const dbUrl = process.env.DB_URL;
+const dbUrl = 'mongodb://127.0.0.1:27017/yelp-camp';
 
 const port = 3000;
 
-mongoose.connect('mongodb://127.0.0.1:27017/yelp-camp');
+mongoose.connect(dbUrl);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, "connection error:"));
@@ -42,7 +45,20 @@ app.use(mongoSanitize({
 }));
 app.use(helmet());
 
+const store = mongoStore.create({
+    mongoUrl: dbUrl,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: 'thisshouldbeabettersecret!'
+    }
+});
+
+store.on('error', function (e) {
+    console.log("Mongo Session Error", e);
+})
+
 const sessionConfig = {
+    store,
     secret: 'mysecretkey',
     resave: false,
     saveUninitialized: false,
